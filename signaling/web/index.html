@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GuPT Signaling Server</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎮 GuPT Signaling Server</h1>
+            <p class="subtitle">Remote Desktop Connection Service</p>
+        </header>
+
+        <div class="stats-container">
+            <div class="stat-card">
+                <div class="stat-value" id="totalHosts">0</div>
+                <div class="stat-label">Total Hosts</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="waitingHosts">0</div>
+                <div class="stat-label">Waiting</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="connectedHosts">0</div>
+                <div class="stat-label">Connected</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="busyHosts">0</div>
+                <div class="stat-label">Busy</div>
+            </div>
+        </div>
+
+        <div class="hosts-section">
+            <div class="section-header">
+                <h2>Available Hosts</h2>
+                <button class="refresh-btn" onclick="refreshHosts()">🔄 Refresh</button>
+            </div>
+
+            <div id="hostsContainer" class="hosts-container">
+                <div class="loading">Loading hosts...</div>
+            </div>
+        </div>
+
+        <footer>
+            <p>GuPT v1.0.0 | <a href="/api/status" target="_blank">API Status</a> | <a href="https://github.com/gupt" target="_blank">GitHub</a></p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

@@ -4,6 +4,7 @@
 #include "../common/packet.h"
 #include "../common/logger.h"
 #include "encoder.h"
+#include "input_handler.h"
 #include <thread>
 #include <atomic>
 #include <mutex>
@@ -93,6 +94,9 @@ public:
     // Check if running
     bool IsRunning() const { return running; }
 
+    // Set input handler (for processing input packets)
+    void SetInputHandler(InputHandler* handler) { inputHandler = handler; }
+
 private:
     // Initialize TCP socket
     bool InitializeTCP();
@@ -154,6 +158,9 @@ private:
     // Statistics
     StreamStats stats;
     std::atomic<uint64_t> lastStatsTime;
+
+    // Input handler (optional, set by user)
+    InputHandler* inputHandler = nullptr;
 };
 
 // ============================================================================

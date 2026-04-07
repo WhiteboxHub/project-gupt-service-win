@@ -1,6 +1,7 @@
 #include "capture.h"
 #include "encoder.h"
 #include "network_server.h"
+#include "input_handler.h"
 #include "../common/utils.h"
 #include "../common/logger.h"
 #include <iostream>
@@ -108,8 +109,26 @@ public:
         LOG_INFO_FMT("Network server started: TCP %u, UDP %u",
                      serverConfig.tcpPort, serverConfig.udpPort);
 
-        // TODO: Initialize input handler (Phase 6)
+        // Initialize input handler
+        InputHandlerConfig inputConfig;
+        inputConfig.screenWidth = width;
+        inputConfig.screenHeight = height;
+        inputConfig.enableKeyboard = true;
+        inputConfig.enableMouse = true;
 
+        if (!inputHandler.Initialize(inputConfig)) {
+            LOG_ERROR("Failed to initialize input handler");
+            networkServer.Shutdown();
+            encoder->Shutdown();
+            screenCapture.Shutdown();
+            NetUtils::CleanupWinsock();
+            return false;
+        }
+
+        // Connect input handler to network server
+        networkServer.SetInputHandler(&inputHandler);
+
+        LOG_INFO("Input handler initialized and connected");
         LOG_INFO("Host initialization complete");
         return true;
     }
@@ -186,11 +205,13 @@ public:
             encoder->Shutdown();
         }
         screenCapture.Shutdown();
+        inputHandler.Shutdown();
         NetUtils::CleanupWinsock();
 
         // Print final stats
         LOG_INFO("=== Final Statistics ===");
         networkServer.GetStats().Print();
+        inputHandler.GetStats().Print();
 
         LOG_INFO("Host application shutdown complete");
     }
@@ -199,7 +220,7 @@ private:
     ScreenCapture screenCapture;
     std::unique_ptr<VideoEncoder> encoder;
     NetworkServer networkServer;
-    // TODO: Add input handler
+    InputHandler inputHandler;
 };
 
 // ============================================================================

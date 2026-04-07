@@ -260,9 +260,15 @@ void NetworkServer::ReceiveThread(ClientInfo* client) {
     LOG_INFO("Receive thread started for client");
 
     while (running && client->active) {
-        // Receive control packet
-        ControlPacket pkt;
-        int bytesReceived = recv(client->tcpSocket, (char*)&pkt, sizeof(pkt), 0);
+        // Peek at packet header to determine type
+        struct PacketHeader {
+            uint32_t magic;
+            uint16_t version;
+            uint16_t type;
+        };
+
+        PacketHeader header;
+        int bytesReceived = recv(client->tcpSocket, (char*)&header, sizeof(header), MSG_PEEK);
 
         if (bytesReceived <= 0) {
             int error = NetUtils::GetLastSocketError();
@@ -275,21 +281,53 @@ void NetworkServer::ReceiveThread(ClientInfo* client) {
             break;
         }
 
-        if (bytesReceived != sizeof(ControlPacket)) {
-            LOG_WARNING_FMT("Received invalid packet size: %d", bytesReceived);
+        if (bytesReceived < sizeof(PacketHeader)) {
+            // Not enough data, wait
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
             continue;
         }
 
-        if (!pkt.IsValid()) {
-            LOG_WARNING("Received invalid control packet");
+        // Validate magic and version
+        if (header.magic != GUPT_MAGIC || header.version != PROTOCOL_VERSION) {
+            LOG_WARNING("Received invalid packet header");
+            // Drain the invalid packet
+            char dummy[256];
+            recv(client->tcpSocket, dummy, sizeof(dummy), 0);
             continue;
         }
 
         // Update heartbeat
         client->lastHeartbeat = PerformanceTimer::GetTimestampMicroseconds();
 
-        // Handle packet
-        HandleControlPacket(client, pkt);
+        // Handle based on packet type
+        if (header.type == INPUT_MOUSE_MOVE || header.type == INPUT_MOUSE_BUTTON ||
+            header.type == INPUT_MOUSE_WHEEL || header.type == INPUT_KEYBOARD) {
+            // Input packet
+            InputPacket inputPkt;
+            bytesReceived = recv(client->tcpSocket, (char*)&inputPkt, sizeof(inputPkt), 0);
+
+            if (bytesReceived != sizeof(InputPacket)) {
+                LOG_WARNING_FMT("Received invalid input packet size: %d", bytesReceived);
+                continue;
+            }
+
+            // Forward to input handler
+            if (inputHandler) {
+                inputHandler->HandleInputPacket(inputPkt);
+            }
+        }
+        else {
+            // Control packet
+            ControlPacket ctrlPkt;
+            bytesReceived = recv(client->tcpSocket, (char*)&ctrlPkt, sizeof(ctrlPkt), 0);
+
+            if (bytesReceived != sizeof(ControlPacket)) {
+                LOG_WARNING_FMT("Received invalid control packet size: %d", bytesReceived);
+                continue;
+            }
+
+            HandleControlPacket(client, ctrlPkt);
+        }
     }
 
     LOG_INFO("Receive thread stopped for client");

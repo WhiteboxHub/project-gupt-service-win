@@ -50,9 +50,8 @@ add_executable(gupt_host
     host/encoder.cpp
     host/network_server.h
     host/network_server.cpp
-    # Input handler (future phase)
-    # host/input_handler.h
-    # host/input_handler.cpp
+    host/input_handler.h
+    host/input_handler.cpp
 )
 
 target_link_libraries(gupt_host PRIVATE
